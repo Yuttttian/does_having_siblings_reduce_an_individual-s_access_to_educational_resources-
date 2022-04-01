@@ -3,6 +3,15 @@ Does having siblings reduce an individual's access to educational resources?
 
 use CEFS to do empirical analysis
 
+# ABSTRACT
+In this paper, we use the China Education Tracking Survey (CEPS) 2014-2015 school year tracking data to study the intra-household educational resource allocation pattern by summarizing parents' investment in their children's educational resources as economic investment and educational participation. The results show that having siblings reduces an individual's access to educational resources for both financial inputs and educational participation. And when explaining semester economic inputs, this dilution shows significant gender differences, with a greater impact on individual women.
+
+# KEY WORDS
+Resource dilution theory, number of siblings, access to education, gender discrimination
+
+
+
+
 Project Organization
 ------------
 
