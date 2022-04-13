@@ -1,0 +1,133 @@
+ssc install logout
+ssc install estout
+
+*多类别单分类虚拟变量生成
+tab make，gen（ ）
+gen edu = 0  if ed = 1
+replace edu = 6 if ed = 2
+replace edu = 9 if ed = 3
+replace edu = if ed = 4
+replace edu = if ed = 5
+replace edu = if ed = 6
+replace edu = if ed = 7
+replace edu = if ed = 8
+replace edu = if ed = 9
+
+1.建议可以做几组回归试试，从简单到复杂，其中关键自变量的设定分别为：
+（1）女性，有兄弟姐妹，女性有兄弟姐妹；
+（2）女性，有兄弟，有姐妹，女性有兄弟，女性有姐妹；
+（3）女性，兄弟姐妹个数，女性兄弟姐妹个数；
+（4）女性，兄弟个数，姐妹个数，女性兄弟个数，女性姐妹个数。
+你只用了最复杂的变量设定方式，很难得到显著的结果。
+2.只要是虚拟变量，变量值怎么会是9？应该根据填报的学历换算成受教育年限。
+3.因变量为辅导班费用时，应该取自然对数。
+费用为0的样本可以令其费用为1，取完对数后是0。
+表4的第4个回归，因变量可反向取值，以保持跟其他回归的含义相同。
+
+preserve
+*合并问卷
+use C:\Users\sansan\Desktop\CEPS2014-2015\cepsw2studentCN.dta
+merge ids using C:\Users\sansan\Desktop\CEPS2014-2015\cepsw2parentCN.dta
+tab w2status
+drop if w2status == 2
+
+*生成变量，xiongdi兄弟数量，jiemei姐妹数量，女性，
+
+gen xiongdi = w2a0601 + w2a0602
+replace xiongdi=0 if xiongdi==.
+
+gen jiemei = w2a0603 + w2a0604
+replace jiemei=0 if jiemei==.
+
+gen gender = 1 if w2c22b <= 99
+replace gender = 0 if gender==.
+
+gen x1 = gender*xiongdi
+gen x2 = gender*jiemei
+
+*多类别单分类虚拟变量生成
+tab make，gen（ ）
+
+
+gen fumu_edu = max(
+
+
+
+
+
+w2ba22 fudao w2a18 w2a19 w2ba19 w2ba20 gender jiemei xiongdi x1 x2 w2a02 fumu_edu ctyids w2be23
+
+
+
+
+*父亲教育程度w2be08 母亲教育程度w2be17
+tab w2be08
+
+replace w2ba1501a= 0 if w2ba1501a==.
+replace w2ba1502a= 0 if w2ba1502a==.
+gen fudao = w2ba1501a + w2ba1502a
+replace fudao = 0 if fudao==.
+drop if fudao >= 16
+preserve
+
+*删除有缺失值样本
+preserve
+keep w2ba22 fudao w2a18 w2a19 w2ba19 w2ba20 gender jiemei xiongdi x1 x2 w2a02 rank fumu_edu ctyids w2be23
+egen mis = rowmiss(_all)
+drop if mis
+su
+restore
+drop if w2a02 ==.
+drop if fumu_edu ==.
+drop if w2be23 ==.
+
+*描述性统计 w2ba22 fudao w2a18 w2a19 w2ba19 w2ba20 gender jiemei xiongdi x1 x2 w2a02 ctyids w2be23
+su w2ba22 fudao w2a18 w2a19 w2ba19 w2ba20 gender jiemei xiongdi x1 x2 w2a02 rank fumu_edu ctyids w2be23
+
+*2
+logout, save(mytable2) word replace:       ///  
+tabstat w2ba22 fudao w2a18 w2a19 w2ba19 w2ba20 gender jiemei xiongdi x1 x2 w2a02 rank fumu_edu ctyids w2be23,  ///
+stats(count mean sd min p50 max) c(s) f(%6.2f)
+
+
+*户口 w2a02  县(区)代码 ctyids 经济条件 w2be23
+*回归1  本学期,孩子上校外辅导班或学习兴趣班所需要的费用共计
+drop if w2ba22 ==.
+reg w2ba22 gender jiemei xiongdi x1 x2 w2a02 ctyids w2be23
+estimates store m1
+esttab m1,label
+*回归2 父母平均每天在这方面总共花多少小时
+reg fudao gender jiemei xiongdi x1 x2 w2a02 ctyids w2be23
+estimates store m2
+esttab m2,label
+
+esttab m1 m2 using test.rtf
+
+mlogit, rrr
+*logostic
+*w2a18 上个星期,你的父母有没有每天检查你的作业
+*1.没有  2.一到二天  3.三到四天  4.几乎每天
+drop if w2a18 ==.
+ssc install mlogit
+mlogit w2a18 gender jiemei xiongdi x1 x2 w2a02 ctyids w2be23, base(1)
+oprobit w2a18 gender jiemei xiongdi x1 x2 w2a02 rank fumu_edu ctyids w2be23
+estimates store m3
+esttab m3,label
+*w2a19 上个星期,你的父母有没有每天指导你的功课
+*1.没有  2.一到二天  3.三到四天  4.几乎每天
+oprobit w2a19 gender jiemei xiongdi x1 x2 w2a02 rank fumu_edu ctyids w2be23
+estimates store m4
+esttab m4,label
+*w2ba19 上个星期,家人是否辅导孩子功课
+*1.不需要  2.需要但没有  3.有 1-2 天 4.有 3-4 天 5.几乎天天 
+drop if w2ba19 == 1
+mlogit w2ba19 gender jiemei xiongdi x1 x2 w2a02 rank fumu_edu ctyids w2be23
+estimates store m5
+esttab m5,label
+*w2ba20 本学期,如果老师要求家长监督孩子的作业,比如写“阅”字、签名等,家长做到了多少
+*0.老师没有这样的要求 1.全部做到  2.大部分做到  3.小部分做到  4.基本都做不到
+drop if w2ba20 == 0
+mlogit w2ba20 gender jiemei xiongdi x1 x2 w2a02 ctyids w2be23, basecategory(1)
+estimates store m6
+esttab m6,label
+esttab m3 m4 m5 m6 using test22.rtf
